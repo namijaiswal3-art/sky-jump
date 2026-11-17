@@ -1,0 +1,568 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKY JUMP - Ultimate Jumping Game</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+*{
+ margin:0;
+ padding:0;
+ box-sizing:border-box;
+}
+
+body{
+ font-family:Poppins,sans-serif;
+ background:#07182d;
+ color:white;
+ min-height:100vh;
+}
+
+header{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ padding:18px 7%;
+ background:#102943;
+ border-bottom:1px solid #254765;
+}
+
+.logo{
+ font-family:Orbitron;
+ font-size:25px;
+ font-weight:900;
+ color:#48dcff;
+}
+
+.logo span{color:white}
+
+nav{
+ display:flex;
+ gap:25px;
+}
+
+nav a{
+ color:#d5e9f7;
+ text-decoration:none;
+ font-size:15px;
+}
+
+nav a:hover{color:#48dcff}
+
+.hero{
+ text-align:center;
+ padding:35px 15px 15px;
+}
+
+.hero h1{
+ font-family:Orbitron;
+ font-size:clamp(38px,7vw,68px);
+ color:#48dcff;
+ text-shadow:0 0 25px #48dcff88;
+}
+
+.hero p{
+ color:#b3c9dc;
+ margin-top:10px;
+ font-size:17px;
+}
+
+.stats{
+ display:flex;
+ justify-content:center;
+ gap:15px;
+ flex-wrap:wrap;
+ margin:25px 10px;
+}
+
+.stat{
+ background:#102943;
+ border:1px solid #285474;
+ border-radius:13px;
+ padding:13px 25px;
+ min-width:120px;
+ text-align:center;
+}
+
+.stat small{
+ color:#a8c2d9;
+}
+
+.stat h2{
+ font-family:Orbitron;
+ color:#48dcff;
+ margin-top:5px;
+ font-size:22px;
+}
+
+.game-container{
+ width:min(900px,94%);
+ margin:15px auto;
+ padding:15px;
+ background:#102943;
+ border:1px solid #285474;
+ border-radius:18px;
+ box-shadow:0 15px 50px #0008;
+}
+
+canvas{
+ display:block;
+ width:100%;
+ border-radius:12px;
+ background:linear-gradient(#70d7ff,#d9f5ff);
+ touch-action:manipulation;
+}
+
+.controls{
+ display:flex;
+ justify-content:center;
+ gap:12px;
+ flex-wrap:wrap;
+ margin-top:18px;
+}
+
+button{
+ border:0;
+ padding:13px 25px;
+ border-radius:9px;
+ font-family:Orbitron;
+ font-size:12px;
+ font-weight:700;
+ cursor:pointer;
+ transition:.2s;
+}
+
+button:hover{transform:translateY(-3px)}
+
+.play{
+ background:#48dcff;
+ color:#061b2e;
+}
+
+.restart{
+ background:#244967;
+ color:white;
+}
+
+.sound{
+ background:#244967;
+ color:white;
+}
+
+.info{
+ text-align:center;
+ padding:35px 15px 50px;
+}
+
+.info h2{
+ font-family:Orbitron;
+ color:#48dcff;
+ margin-bottom:15px;
+}
+
+.info p{
+ color:#b3c9dc;
+ line-height:2;
+}
+
+footer{
+ text-align:center;
+ padding:20px;
+ background:#102943;
+ color:#8faec8;
+}
+
+@media(max-width:600px){
+ header{padding:15px 4%}
+ nav{gap:12px}
+ nav a{font-size:12px}
+ .stat{min-width:100px;padding:10px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+ <div class="logo">SKY <span>JUMP</span></div>
+ <nav>
+  <a href="#home">Home</a>
+  <a href="#game">Play</a>
+  <a href="#about">About</a>
+ </nav>
+</header>
+
+<section class="hero" id="home">
+ <h1>SKY JUMP</h1>
+ <p>Jump into the sky and reach the highest score!</p>
+</section>
+
+<div class="stats">
+ <div class="stat">
+  <small>YOUR SCORE</small>
+  <h2 id="score">0</h2>
+ </div>
+
+ <div class="stat">
+  <small>BEST SCORE</small>
+  <h2 id="best">0</h2>
+ </div>
+
+ <div class="stat">
+  <small>LEVEL</small>
+  <h2 id="level">1</h2>
+ </div>
+</div>
+
+<section class="game-container" id="game">
+ <canvas id="canvas" width="850" height="450"></canvas>
+
+ <div class="controls">
+  <button class="play" onclick="startGame()">▶ PLAY GAME</button>
+  <button class="restart" onclick="restartGame()">↻ RESTART</button>
+  <button class="sound" id="soundBtn" onclick="toggleSound()">🔊 SOUND ON</button>
+ </div>
+</section>
+
+<section class="info" id="about">
+ <h2>HOW TO PLAY</h2>
+ <p>
+  ⬆ Press SPACE or UP ARROW to jump.<br>
+  🖱️ Click or tap the game screen to jump.<br>
+  ☁️ Land on the platforms to climb higher.<br>
+  🏆 Make the highest score and beat your record!
+ </p>
+</section>
+
+<footer>
+ SKY JUMP © 2026 | Ultimate Arcade Gaming
+</footer>
+
+<script>
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+const W=850,H=450;
+
+let player={
+ x:405,
+ y:340,
+ w:34,
+ h:42,
+ vx:0,
+ vy:0
+};
+
+let platforms=[];
+let score=0;
+let best=Number(localStorage.getItem("skyBest"))||0;
+let level=1;
+let running=false;
+let over=false;
+let animation=null;
+let sound=true;
+let keys={};
+let camera=0;
+let frame=0;
+
+document.getElementById("best").textContent=best;
+
+function makePlatform(x,y,w=90){
+ return {x,y,w,h:12};
+}
+
+function setup(){
+ platforms=[];
+ platforms.push(makePlatform(370,395,120));
+
+ for(let i=0;i<7;i++){
+  platforms.push(makePlatform(
+   Math.random()*740,
+   340-i*58,
+   75+Math.random()*35
+  ));
+ }
+
+ player.x=405;
+ player.y=340;
+ player.vx=0;
+ player.vy=0;
+ camera=0;
+}
+
+function drawCloud(x,y,s=1){
+ ctx.fillStyle="rgba(255,255,255,.8)";
+ ctx.beginPath();
+ ctx.arc(x,y,17*s,0,Math.PI*2);
+ ctx.arc(x+20*s,y-9*s,22*s,0,Math.PI*2);
+ ctx.arc(x+43*s,y,17*s,0,Math.PI*2);
+ ctx.fill();
+}
+
+function background(){
+ let gradient=ctx.createLinearGradient(0,0,0,H);
+ gradient.addColorStop(0,"#51c9ff");
+ gradient.addColorStop(1,"#e1f8ff");
+ ctx.fillStyle=gradient;
+ ctx.fillRect(0,0,W,H);
+
+ drawCloud(100,90,.8);
+ drawCloud(550,150,1);
+ drawCloud(740,55,.7);
+
+ ctx.fillStyle="rgba(255,255,255,.35)";
+ for(let i=0;i<15;i++){
+  let x=(i*89+frame*.2)%W;
+  let y=(i*53)%H;
+  ctx.beginPath();
+  ctx.arc(x,y,2,0,Math.PI*2);
+  ctx.fill();
+ }
+}
+
+function drawPlayer(){
+ let x=player.x;
+ let y=player.y;
+
+ // Character body
+ ctx.fillStyle="#ffb52e";
+ ctx.beginPath();
+ ctx.roundRect(x,y,player.w,player.h,10);
+ ctx.fill();
+
+ // Eyes
+ ctx.fillStyle="#172c42";
+ ctx.fillRect(x+8,y+10,5,6);
+ ctx.fillRect(x+22,y+10,5,6);
+
+ // Smile
+ ctx.strokeStyle="#172c42";
+ ctx.lineWidth=2;
+ ctx.beginPath();
+ ctx.arc(x+17,y+20,6,0.2,Math.PI-.2);
+ ctx.stroke();
+
+ // Feet
+ ctx.fillStyle="#ef7737";
+ ctx.fillRect(x+3,y+36,11,6);
+ ctx.fillRect(x+21,y+36,11,6);
+}
+
+function drawPlatforms(){
+ platforms.forEach(p=>{
+  ctx.fillStyle="#159b74";
+  ctx.beginPath();
+  ctx.roundRect(p.x,p.y-camera,p.w,p.h,6);
+  ctx.fill();
+
+  ctx.fillStyle="#5cf0b5";
+  ctx.fillRect(p.x+8,p.y-camera+2,p.w-16,3);
+ });
+}
+
+function draw(){
+ background();
+ drawPlatforms();
+ drawPlayer();
+
+ ctx.fillStyle="#123c5a";
+ ctx.font="bold 16px Poppins";
+ ctx.fillText("SKY JUMP",20,30);
+}
+
+function beep(freq=400){
+ if(!sound)return;
+
+ try{
+  let audio=new (window.AudioContext||window.webkitAudioContext)();
+  let osc=audio.createOscillator();
+  let gain=audio.createGain();
+
+  osc.frequency.value=freq;
+  osc.connect(gain);
+  gain.connect(audio.destination);
+  gain.gain.setValueAtTime(.06,audio.currentTime);
+  gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.12);
+  osc.start();
+  osc.stop(audio.currentTime+.12);
+  osc.onended=()=>audio.close();
+ }catch(e){}
+}
+
+function update(){
+ if(!running)return;
+
+ frame++;
+
+ // Horizontal movement
+ let move=0;
+ if(keys["ArrowLeft"]||keys["KeyA"])move=-1;
+ if(keys["ArrowRight"]||keys["KeyD"])move=1;
+
+ player.vx=move*5;
+ player.x+=player.vx;
+
+ if(player.x>W)player.x=-player.w;
+ if(player.x+player.w<0)player.x=W;
+
+ // Gravity
+ player.vy+=.38;
+ let oldY=player.y;
+ player.y+=player.vy;
+
+ // Platform landing
+ if(player.vy>0){
+  platforms.forEach(p=>{
+   if(
+    player.x+player.w>p.x &&
+    player.x<p.x+p.w &&
+    oldY+player.h<=p.y &&
+    player.y+player.h>=p.y
+   ){
+    player.y=p.y-player.h;
+    player.vy=-10.5;
+    beep(550);
+   }
+  });
+ }
+
+ // Camera follows upward movement
+ if(player.y-camera<190){
+  camera=player.y-190;
+ }
+
+ // Generate new platforms
+ let highest=Math.min(...platforms.map(p=>p.y));
+
+ while(highest>camera-150){
+  highest-=55+Math.random()*15;
+  platforms.push(makePlatform(
+   Math.random()*(W-95),
+   highest,
+   70+Math.random()*35
+  ));
+ }
+
+ platforms=platforms.filter(p=>p.y-camera<H+50);
+
+ // Score
+ score=Math.max(score,Math.floor(-camera/10));
+ level=1+Math.floor(score/100);
+
+ document.getElementById("score").textContent=score;
+ document.getElementById("level").textContent=level;
+
+ if(player.y-camera>H+30){
+  endGame();
+  return;
+ }
+
+ draw();
+ animation=requestAnimationFrame(update);
+}
+
+function startGame(){
+ if(running)return;
+ if(over){
+  restartGame();
+  return;
+ }
+ running=true;
+ update();
+}
+
+function endGame(){
+ running=false;
+ over=true;
+ cancelAnimationFrame(animation);
+
+ if(score>best){
+  best=score;
+  localStorage.setItem("skyBest",best);
+ }
+
+ document.getElementById("best").textContent=best;
+
+ draw();
+
+ ctx.fillStyle="rgba(5,25,45,.75)";
+ ctx.fillRect(0,0,W,H);
+
+ ctx.textAlign="center";
+ ctx.fillStyle="#ffffff";
+ ctx.font="bold 42px Orbitron";
+ ctx.fillText("GAME OVER",W/2,190);
+
+ ctx.font="bold 23px Poppins";
+ ctx.fillText("Your Score: "+score,W/2,235);
+
+ ctx.font="17px Poppins";
+ ctx.fillText("Press RESTART to play again",W/2,275);
+
+ beep(180);
+ ctx.textAlign="left";
+}
+
+function restartGame(){
+ cancelAnimationFrame(animation);
+ score=0;
+ level=1;
+ frame=0;
+ over=false;
+ running=false;
+
+ document.getElementById("score").textContent=0;
+ document.getElementById("level").textContent=1;
+
+ setup();
+ draw();
+}
+
+function toggleSound(){
+ sound=!sound;
+ document.getElementById("soundBtn").textContent=
+ sound?"🔊 SOUND ON":"🔇 SOUND OFF";
+}
+
+document.addEventListener("keydown",e=>{
+ keys[e.code]=true;
+
+ if(["Space","ArrowUp"].includes(e.code)){
+  e.preventDefault();
+
+  if(!running&&!over){
+   startGame();
+  }else if(over){
+   restartGame();
+   startGame();
+  }else if(player.vy>-2){
+   player.vy=-10.5;
+   beep(500);
+  }
+ }
+});
+
+document.addEventListener("keyup",e=>{
+ keys[e.code]=false;
+});
+
+canvas.addEventListener("pointerdown",()=>{
+ if(!running){
+  if(over)restartGame();
+  startGame();
+ }else if(player.vy>-2){
+  player.vy=-10.5;
+  beep(500);
+ }
+});
+
+setup();
+draw();
+
+</script>
+</body>
+</html>
